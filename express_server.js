@@ -40,10 +40,16 @@ app.post("/urls", (req, res) => {
   let short = newString();
   let long = req.body.longURL;
   urlDatabase[short] = long;
-  console.log(req.body);  // Log the POST request body to the console
-  console.log(urlDatabase);  // Log the POST request body to the console
+  // console.log(req.body);  // Log the POST request body to the console
+  // console.log(urlDatabase);  // Log the POST request body to the console
   // res.send("Ok");         // Respond with 'Ok' (we will replace this)
   res.redirect(`/urls/${short}`);
+});
+
+app.get("/u/:shortURL", (req, res) => {
+  let short = req.params.shortURL;
+  const longURL = urlDatabase[short];
+  res.redirect(longURL);
 });
 
 // app.get("/hello", (req, res) => {
