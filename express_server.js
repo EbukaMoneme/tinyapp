@@ -14,10 +14,6 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
-
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
@@ -46,15 +42,16 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${short}`);
 });
 
+app.post("/urls/:shortURL/delete", (req, res) => {
+  delete urlDatabase[req.params.shortURL];
+  res.redirect(`/urls`);
+});
+
 app.get("/u/:shortURL", (req, res) => {
   let short = req.params.shortURL;
   const longURL = urlDatabase[short];
   res.redirect(longURL);
 });
-
-// app.get("/hello", (req, res) => {
-//   res.send("<html><body>Hello <b>World</b></body></html>\n");
-// });
 
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}!`);
