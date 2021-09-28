@@ -14,7 +14,16 @@
         <h5 class="card-title">TinyURL for: <%= longURL %></h5>
         <p class="card-text">Short URL: <a href="/u/<%= shortURL %>"><%= shortURL %></a></p>
       </div>
-    <div class="card-footer text-muted"></div>
+    <div class="card-footer text-center ">
+      <div class="card-body">
+        <h3 class="card-title">Edit</h3>
+        <form style="display: inline-flex; align-items: center;" action="/urls/<%= shortURL %>" method="POST">
+            <label for="newURL">New URL:</label>
+            <input type="text" class="form-control" name="newURL" placeholder="http://" style="width: 300px; margin: 1em" required>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+      </div>
+    </div>
   </div>
   <!-- Bootstrap JS -->
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
