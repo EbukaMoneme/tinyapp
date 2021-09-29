@@ -25,6 +25,16 @@ const mailCheck = (userObj, email) => {
   return false;
 }
 
+const newUser = (email, password, db) => {
+  const id = newString();
+  db[id] = {
+    id,
+    email,
+    password
+  };
+  return id
+}
+
 //////////////////////////////////////////////
 
 //////////// Constants /////////////////
@@ -112,18 +122,22 @@ app.post("/urls/:shortURL", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  if (!mailCheck(users, req.body.email)) {
+  const email = req.body.email;
+  const password = req.body.password;
+  const user = mailCheck(users, email);
+
+  if (!user) {
     res.status(403);
     res.send("Email cannot be found");
     return
   }
-  if (mailCheck(users, req.body.email).password !== req.body.password) {
+  if (user.password !== password) {
     res.status(403);
     res.send("Incorrect password");
     return
   }
 
-  res.cookie("user_id", mailCheck(users, req.body.email).id);
+  res.cookie("user_id", user.id);
   res.redirect(`/urls`);
 });
 
@@ -133,25 +147,23 @@ app.post("/logout", (req, res) => {
 });
 
 app.post("/register", (req, res) => {
-  if (!req.body.email || !req.body.password) {
+  const email = req.body.email;
+  const password = req.body.password;
+
+  if (!email || !password) {
     res.status(400);
     res.send("Invalid email or password");
     return
   }
-  if (mailCheck(users, req.body.email)) {
+  if (mailCheck(users, email)) {
     res.status(400);
     res.send("Email already in use");
     return
   }
-  let newUser = newString();
-  let user = {
-    id: newUser,
-    email: req.body.email,
-    password: req.body.password,
-  }
-  users[newUser] = user;
+  const userId = newUser(email, password, users);
+
   console.log(users);
-  res.cookie("user_id", newUser);
+  res.cookie("user_id", userId);
   res.redirect(`/urls`);
 });
 
