@@ -35,6 +35,16 @@ const newUser = (email, password, db) => {
   return id
 }
 
+const urlsForUser = (id) => {
+  let userDisplay = {};
+  for (let url in urlDatabase) {
+    if (urlDatabase[url].userID === id) {
+      userDisplay[url] = urlDatabase[url];
+    }
+  }
+  return userDisplay;
+}
+
 //////////////////////////////////////////////
 
 //////////// Constants /////////////////
@@ -64,8 +74,12 @@ app.get("/urls.json", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
+  if (!req.cookies["user_id"]) {
+    res.status(404)
+    res.send("You must be logged in to access this.")
+  }
   const templateVars = { 
-    urls: urlDatabase,
+    urls: urlsForUser(req.cookies["user_id"]),
     "user_id": users[req.cookies["user_id"]]
   };
   res.render("urls_index", templateVars);
@@ -97,6 +111,19 @@ app.get("/login", (req, res) => {
 });
 
 app.get("/urls/:shortURL", (req, res) => {
+  if (!req.cookies["user_id"]) {
+    res.status(403)
+    res.send("You must be logged in to access this.")
+  }
+  let short = req.params.shortURL
+  let urlCheck = urlDatabase[short].userID;
+  if (req.cookies["user_id"] !== urlCheck) {
+    res.status(403)
+    res.send("You do not own this URL")
+  }
+  // console.log(req.params)
+  // console.log(req.cookies)
+  // console.log(urlDatabase[req.params.shortURL].userID)
   const templateVars = { 
     shortURL: req.params.shortURL, 
     longURL: urlDatabase[req.params.shortURL].longURL,
@@ -124,14 +151,31 @@ app.post("/urls", (req, res) => {
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
+  if (!req.cookies["user_id"]) {
+    res.status(403)
+    res.send("You must be logged in to access this.")
+  }
+  let short = req.params.shortURL
+  let urlCheck = urlDatabase[short].userID;
+  if (req.cookies["user_id"] !== urlCheck) {
+    res.status(403)
+    res.send("You do not own this URL")
+  }
   delete urlDatabase[req.params.shortURL];
   res.redirect(`/urls`);
 });
 
 app.post("/urls/:shortURL", (req, res) => {
-  console.log(req.params)
-  console.log(req.body)
-  let short = req.params.shortURL;
+  if (!req.cookies["user_id"]) {
+    res.status(403)
+    res.send("You must be logged in to access this.")
+  }
+  let short = req.params.shortURL
+  let urlCheck = urlDatabase[short].userID;
+  if (req.cookies["user_id"] !== urlCheck) {
+    res.status(403)
+    res.send("You do not own this URL")
+  }
   let newUrl = req.body.newURL;
   urlDatabase[short].longURL = newUrl;
   res.redirect(`/urls`);
@@ -159,7 +203,7 @@ app.post("/login", (req, res) => {
 
 app.post("/logout", (req, res) => {
   res.clearCookie("user_id", mailCheck(users, req.body.email).id);
-  res.redirect(`/urls`);
+  res.redirect(`/login`);
 });
 
 app.post("/register", (req, res) => {
