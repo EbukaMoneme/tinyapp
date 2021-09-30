@@ -5,6 +5,8 @@ const app = express();
 const PORT = 8080; // default port 8080
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
+const bcrypt = require('bcryptjs');
+const salt = bcrypt.genSaltSync(10);
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
 app.set("view engine", "ejs");
@@ -71,6 +73,10 @@ const users = {
 //////////// Template Renders /////////////////
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
+});
+
+app.get("/", (req, res) => {
+  res.redirect("/login");
 });
 
 app.get("/urls", (req, res) => {
@@ -197,7 +203,8 @@ app.post("/login", (req, res) => {
     res.send("Email cannot be found");
     return
   }
-  if (user.password !== password) {
+  if (!bcrypt.compareSync(password, user.password)) {
+  // if (user.password !== password) {
     res.status(403);
     res.send("Incorrect password");
     return
@@ -226,7 +233,8 @@ app.post("/register", (req, res) => {
     res.send("Email already in use");
     return
   }
-  const userId = newUser(email, password, users);
+  const hashpass = bcrypt.hashSync(password, salt);
+  const userId = newUser(email, hashpass, users);
 
   console.log(users);
   res.cookie("user_id", userId);
