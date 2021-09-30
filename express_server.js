@@ -97,6 +97,9 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
+  if (req.cookies["user_id"]) {
+    res.redirect("/urls");
+  }
   const templateVars = { 
     "user_id": users[req.cookies["user_id"]]
   };
@@ -104,6 +107,9 @@ app.get("/register", (req, res) => {
 });
 
 app.get("/login", (req, res) => {
+  if (req.cookies["user_id"]) {
+    res.redirect("/urls");
+  }
   const templateVars = { 
     "user_id": users[req.cookies["user_id"]]
   };
