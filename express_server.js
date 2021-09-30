@@ -5,11 +5,18 @@ const app = express();
 const PORT = 8080; // default port 8080
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
 const bcrypt = require('bcryptjs');
 const salt = bcrypt.genSaltSync(10);
+const morgan = require('morgan');
+app.use(morgan('dev'));
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
 app.set("view engine", "ejs");
+app.use(cookieSession({
+  name: 'session',
+  keys: ['This is a key that Im using to encrypt', '$!2@as125AF42%^&*'],
+}))
 
 ///////////////////////////////////////////////////////
 
@@ -65,7 +72,7 @@ const users = {
   "aJ481W": {
     id: "aJ481W", 
     email: "user@example.com", 
-    password: "purple-monkey"
+    password: bcrypt.hashSync("purple-monkey", salt)
   },
 }
 //////////////////////////////////////////////
@@ -80,56 +87,61 @@ app.get("/", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  if (!req.cookies["user_id"]) {
+  let identity = req.cookies["user_id"];
+  if (!identity) {
     res.status(404)
     res.send("You must be logged in to access this.")
   }
   const templateVars = { 
-    urls: urlsForUser(req.cookies["user_id"]),
-    "user_id": users[req.cookies["user_id"]]
+    urls: urlsForUser(identity),
+    "user_id": users[identity]
   };
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
-  console.log(req.cookies["user_id"]? true: false)
-  if (!req.cookies["user_id"]) {
+  let identity = req.cookies["user_id"];
+  console.log(identity? true: false)
+  if (!identity) {
     return res.redirect("/login");
   }
   const templateVars = { 
-    "user_id": users[req.cookies["user_id"]]
+    "user_id": users[identity]
   };
   res.render("urls_new", templateVars);
 });
 
 app.get("/register", (req, res) => {
-  if (req.cookies["user_id"]) {
+  let identity = req.cookies["user_id"];
+  if (identity) {
     res.redirect("/urls");
   }
   const templateVars = { 
-    "user_id": users[req.cookies["user_id"]]
+    "user_id": users[identity]
   };
   res.render("urls_register", templateVars);
 });
 
 app.get("/login", (req, res) => {
-  if (req.cookies["user_id"]) {
+  let identity = req.cookies["user_id"];
+  if (identity) {
     res.redirect("/urls");
   }
   const templateVars = { 
-    "user_id": users[req.cookies["user_id"]]
+    "user_id": users[identity]
   };
   res.render("urls_login", templateVars);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  if (!req.cookies["user_id"]) {
+  let identity = req.cookies["user_id"];
+  if (!identity) {
     res.status(403)
     res.send("You must be logged in to access this.")
   }
   let short = req.params.shortURL
   let urlCheck = urlDatabase[short].userID;
-  if (req.cookies["user_id"] !== urlCheck) {
+  if (identity !== urlCheck) {
     res.status(403)
     res.send("You do not own this URL")
   }
@@ -139,7 +151,7 @@ app.get("/urls/:shortURL", (req, res) => {
   const templateVars = { 
     shortURL: req.params.shortURL, 
     longURL: urlDatabase[req.params.shortURL].longURL,
-    "user_id": users[req.cookies["user_id"]]
+    "user_id": users[identity]
    };
   res.render("urls_show", templateVars);
 });
@@ -147,7 +159,8 @@ app.get("/urls/:shortURL", (req, res) => {
 
 //////////// Page actions and redirects /////////////////
 app.post("/urls", (req, res) => {
-  if (!req.cookies["user_id"]) {
+  let identity = req.cookies["user_id"];
+  if (!identity) {
     res.status(403);
     res.send("Must be logged in to complete this action");
     return
@@ -156,20 +169,21 @@ app.post("/urls", (req, res) => {
   let long = req.body.longURL;
   urlDatabase[short] = {
     longURL: long,
-    userID: req.cookies["user_id"],
+    userID: identity,
   }
   console.log(urlDatabase)
   res.redirect(`/urls/${short}`);
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  if (!req.cookies["user_id"]) {
+  let identity = req.cookies["user_id"];
+  if (!identity) {
     res.status(403)
     res.send("You must be logged in to access this.")
   }
   let short = req.params.shortURL
   let urlCheck = urlDatabase[short].userID;
-  if (req.cookies["user_id"] !== urlCheck) {
+  if (identity !== urlCheck) {
     res.status(403)
     res.send("You do not own this URL")
   }
@@ -178,13 +192,14 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 app.post("/urls/:shortURL", (req, res) => {
-  if (!req.cookies["user_id"]) {
+  let identity = req.cookies["user_id"];
+  if (!identity) {
     res.status(403)
     res.send("You must be logged in to access this.")
   }
   let short = req.params.shortURL
   let urlCheck = urlDatabase[short].userID;
-  if (req.cookies["user_id"] !== urlCheck) {
+  if (identity !== urlCheck) {
     res.status(403)
     res.send("You do not own this URL")
   }
@@ -215,7 +230,8 @@ app.post("/login", (req, res) => {
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie("user_id", mailCheck(users, req.body.email).id);
+  const email = req.body.email;
+  res.clearCookie("user_id", mailCheck(users, email).id);
   res.redirect(`/login`);
 });
 
