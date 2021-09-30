@@ -87,7 +87,7 @@ app.get("/", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  let identity = req.cookies["user_id"];
+  let identity = req.session.user_id;
   if (!identity) {
     res.status(404)
     res.send("You must be logged in to access this.")
@@ -100,7 +100,7 @@ app.get("/urls", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
-  let identity = req.cookies["user_id"];
+  let identity = req.session.user_id;
   console.log(identity? true: false)
   if (!identity) {
     return res.redirect("/login");
@@ -112,7 +112,7 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  let identity = req.cookies["user_id"];
+  let identity = req.session.user_id;
   if (identity) {
     res.redirect("/urls");
   }
@@ -123,7 +123,7 @@ app.get("/register", (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-  let identity = req.cookies["user_id"];
+  let identity = req.session.user_id;
   if (identity) {
     res.redirect("/urls");
   }
@@ -134,7 +134,7 @@ app.get("/login", (req, res) => {
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  let identity = req.cookies["user_id"];
+  let identity = req.session.user_id;
   if (!identity) {
     res.status(403)
     res.send("You must be logged in to access this.")
@@ -159,7 +159,7 @@ app.get("/urls/:shortURL", (req, res) => {
 
 //////////// Page actions and redirects /////////////////
 app.post("/urls", (req, res) => {
-  let identity = req.cookies["user_id"];
+  let identity = req.session.user_id;
   if (!identity) {
     res.status(403);
     res.send("Must be logged in to complete this action");
@@ -176,7 +176,7 @@ app.post("/urls", (req, res) => {
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  let identity = req.cookies["user_id"];
+  let identity = req.session.user_id;
   if (!identity) {
     res.status(403)
     res.send("You must be logged in to access this.")
@@ -192,7 +192,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 app.post("/urls/:shortURL", (req, res) => {
-  let identity = req.cookies["user_id"];
+  let identity = req.session.user_id;
   if (!identity) {
     res.status(403)
     res.send("You must be logged in to access this.")
@@ -225,13 +225,15 @@ app.post("/login", (req, res) => {
     return
   }
 
-  res.cookie("user_id", user.id);
+  req.session.user_id = user.id;
   res.redirect(`/urls`);
 });
 
 app.post("/logout", (req, res) => {
+  let identity = req.session.user_id;
   const email = req.body.email;
-  res.clearCookie("user_id", mailCheck(users, email).id);
+  req.session = null;
+  // res.clearCookie("user_id", mailCheck(users, email).id);
   res.redirect(`/login`);
 });
 
@@ -253,7 +255,7 @@ app.post("/register", (req, res) => {
   const userId = newUser(email, hashpass, users);
 
   console.log(users);
-  res.cookie("user_id", userId);
+  req.session.user_id = userId;
   res.redirect(`/urls`);
 });
 
