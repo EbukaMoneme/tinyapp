@@ -1,5 +1,4 @@
 //////////// Set up and dependencies /////////////////
-
 const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
@@ -19,22 +18,6 @@ app.use(cookieSession({
 ///////////////////////////////////////////////////////
 
 //////////// Helper Functions /////////////////
-const newString = ()  => {
-  return Math.random().toString(36).substr(2, 6);
-}
-
-const {mailCheck} = require("./helpers");
-
-const newUser = (email, password, db) => {
-  const id = newString();
-  db[id] = {
-    id,
-    email,
-    password
-  };
-  return id
-}
-
 const getUrlsForUser = (id) => {
   let userDisplay = {};
   for (let url in urlDatabase) {
@@ -43,7 +26,9 @@ const getUrlsForUser = (id) => {
     }
   }
   return userDisplay;
-}
+};
+
+const {getUserByEmail, newUser, newString} = require("./helpers");
 
 //////////////////////////////////////////////
 
@@ -69,10 +54,7 @@ const users = {
 //////////////////////////////////////////////
 
 //////////// Template Renders /////////////////
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
-
+// Root path
 app.get("/", (req, res) => {
   let identity = req.session.user_id;
   if (!identity) {
@@ -82,6 +64,7 @@ app.get("/", (req, res) => {
   res.redirect("/urls");
 });
 
+// path to show all urls
 app.get("/urls", (req, res) => {
   let identity = req.session.user_id;
   if (!identity) {
@@ -96,6 +79,7 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
+// path to create new URL
 app.get("/urls/new", (req, res) => {
   let identity = req.session.user_id;
   if (!identity) {
@@ -129,6 +113,7 @@ app.get("/login", (req, res) => {
   res.render("urls_login", templateVars);
 });
 
+// path to individual short URL page
 app.get("/urls/:shortURL", (req, res) => {
   let identity = req.session.user_id;
   let short = req.params.shortURL;
@@ -156,6 +141,7 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
+// path connects short URL to long URL
 app.get("/u/:shortURL", (req, res) => {
   let short = req.params.shortURL;
   if (!urlDatabase[short]) {
@@ -169,6 +155,7 @@ app.get("/u/:shortURL", (req, res) => {
 //////////////////////////////////////////////
 
 //////////// Page actions and redirects /////////////////
+//Recieves form submission and makes new key-value pair in database
 app.post("/urls", (req, res) => {
   let identity = req.session.user_id;
   if (!identity) {
@@ -185,6 +172,7 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${short}`);
 });
 
+// Delete URL
 app.post("/urls/:shortURL/delete", (req, res) => {
   let identity = req.session.user_id;
   if (!identity) {
@@ -203,6 +191,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.redirect(`/urls`);
 });
 
+// Update URL
 app.post("/urls/:shortURL", (req, res) => {
   let identity = req.session.user_id;
   if (!identity) {
@@ -222,10 +211,11 @@ app.post("/urls/:shortURL", (req, res) => {
   res.redirect(`/urls`);
 });
 
+// Log user in and set cookies
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  const user = mailCheck(users, email);
+  const user = getUserByEmail(users, email);
 
   if (!user) {
     res.status(403);
@@ -241,6 +231,7 @@ app.post("/login", (req, res) => {
   res.redirect(`/urls`);
 });
 
+// Logout user and clear cookies
 app.post("/logout", (req, res) => {
   let identity = req.session.user_id;
   const email = req.body.email;
@@ -248,6 +239,7 @@ app.post("/logout", (req, res) => {
   res.redirect(`/login`);
 });
 
+// Register user
 app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
@@ -257,7 +249,7 @@ app.post("/register", (req, res) => {
     res.send("Invalid email or password. <a href = '/register'>Go Back!</a>");
     return;
   }
-  if (mailCheck(users, email)) {
+  if (getUserByEmail(users, email)) {
     res.status(400);
     res.send("Email already in use. <a href = '/register'>Go Back!</a>");
     return;
